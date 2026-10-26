@@ -1,0 +1,29 @@
+# Credentials and private local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+*.local
+*.local.*
+# Agent and editor local state
+.codex/
+.claude/
+.cursor/
+.vscode/
+.idea/
+# Personal workspace data; no application data layout has been selected
+.local/
+private/
+# Operating system and temporary files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+*.tmp
+*.swp
+~$*
