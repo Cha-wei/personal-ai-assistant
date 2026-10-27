@@ -27,3 +27,6 @@ Desktop.ini
 *.tmp
 *.swp
 ~$*
+.venv/
+__pycache__/
+*.pyc
