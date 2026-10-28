@@ -4,9 +4,9 @@
 
 ## 当前开发状态
 
-项目已完成独立 Git 仓库 Bootstrap，当前处于**产品与总体架构设计阶段**；需求、架构决策及设计文档本身属于项目成果，经过 Human 确认后通过 Git 进行版本管理。
+项目已完成独立 Git 仓库 Bootstrap，并已合并 T01（本地项目状态只读 MCP）与 T03（GitHub `main` 基线只读查询）。T02 已在 Windows 本地 DeepSeek Harness 环境中验证复用 T01 工具。当前阶段是从接入原型验证转向**模块 1 项目登记与版本变化感知的范围细化**；模块 1 的完整业务能力及模块 2、模块 3 尚未实现。
 
-T01 任务分支提供首个 Windows 本地只读 MCP 工具；交付与验收状态以对应 PR 的版本绑定证据为准。**设计共识及产品规划不自动授权功能实施**；后续业务开发须有明确的 Task Scope、验收条件及 Human 授权。
+需求、架构决策及设计文档本身属于正式项目成果，经过 Human 确认后通过 Git 进行版本管理。**已有设计共识、已合并原型和历史任务授权，不自动授权后续功能实施**；后续开发仍须有明确的 Task Scope、验收条件及必要批准。
 
 ## 核心模块规划
 
@@ -26,7 +26,13 @@ T01 任务分支提供首个 Windows 本地只读 MCP 工具；交付与验收�
 
 ## 当前验证入口
 
-T01 的运行与测试入口如下。尚未配置 CI 或 AI Eval，不将本地测试等同于完整模块验收。
+以下记录已完成的接入验证范围，再提供 T01/T03 的复现入口。当前尚未配置 CI 或 AI Eval；本地测试与客户端调用证据不等同于完整模块验收。
+
+### 已完成的验证范围
+
+- **T01 — 本地项目状态查询（[PR #4](https://github.com/Cha-wei/personal-ai-assistant/pull/4)，已合并）**：Windows Codex 实际调用 `get_project_status`，返回的分支、HEAD 和工作区状态与直接 Git 查询一致。14 项自动化测试在实现 HEAD `b9dc2223d346328a604c1652be0bf34432aad83a` 通过；这是本地验证，不是 CI，也不代表模块 1 完成。
+- **T02 — DeepSeek Harness 接入验证（已完成，范围限 T01 工具）**：Windows 本地 DSH `0.1.5-rc.1` 通过 stdio 复用同一 MCP Server，工具发现成功，并完成 3 次真实 AI 调用；返回结果与直接 Git 查询一致。详细报告保存在本地被忽略的 `.local/t02-verification-report.md`，未纳入仓库。该验证不覆盖 T03 的 `get_project_baseline_status`，也不证明聊天记录、工作目录或权限模型同步。另有一次 Codex 回归调用虽完成 MCP 调用，但命令因传输层重连/降级超时以退出码 1 结束，不能把该命令整体标为 PASS。
+- **T03 — GitHub `main` 基线查询（[PR #5](https://github.com/Cha-wei/personal-ai-assistant/pull/5)，已合并）**：新增 `get_project_baseline_status`，只读查询固定配置的 GitHub 仓库 `main`，结合本地提交图返回版本关系；失败或证据不足时返回 `UNKNOWN`，不自动同步。18 项测试在实现 HEAD `a6aaa1f65737a6f1dc1c32cce23bc9da65b9aaa9` 通过，Windows Codex 实际调用成功。最终 PR HEAD `0db0c0de3a758d0b1cff2fdca9e0ddabf74f2f49` 只调整 README 章节位置，未重新运行完整测试套件；因此旧测试仅作为未变更实现范围的历史证据。T03 工具尚未在 DSH 中验证。
 
 ### Windows 本地 MCP（T01）
 
@@ -73,7 +79,7 @@ stdio 启动参数增加 `--github-repository Cha-wei/personal-ai-assistant` 后
 codex mcp add t03_project_baseline -- E:\AI-assistant\.venv\Scripts\python.exe E:\AI-assistant\mcp_server.py --project E:\AI-assistant --github-repository Cha-wei/personal-ai-assistant
 ```
 
-在新聊天中调用该服务器的两个工具核对兼容性；DeepSeek Harness 可复用同一 stdio 命令，但实际兼容性须另有证据。移除本次注册：`codex mcp remove t03_project_baseline`。
+在新聊天中调用该服务器的两个工具核对兼容性；T03 的 DeepSeek Harness 实际兼容性尚未验证。移除本次注册：`codex mcp remove t03_project_baseline`。
 
 ## 规范来源
 
