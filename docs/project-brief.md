@@ -63,3 +63,7 @@
 - [产品蓝图](product-blueprint.md)
 - [运行和验证入口](../README.md#当前验证入口)
 - [通用 Workflow](../CONTRIBUTING.md)；Task/PR/Review 依现有规则按需建立，不新设平行审批体系。
+
+## T04 当前授权
+
+2026-10-29 Human 明确授权 T04 项目登记、来源显式关联和 GitHub 安全只读接入，允许任务分支推送与 PR；最终验收及 Merge 仍由 Human 执行。候选实现不代表已合并或已验收。使用本地 SQLite 和 Windows Credential Manager，保持 T01/T03 兼容；不包含 T05 持久化观察版本、变化检测和通知。验收状态以 T04 PR 的实际 HEAD 证据为准。

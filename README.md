@@ -84,3 +84,51 @@ codex mcp add t03_project_baseline -- E:\AI-assistant\.venv\Scripts\python.exe E
 ## 规范来源
 
 通用治理文件和任务、审核、PR 模板来自 personal-ai-dev-starter；项目说明与范围文档根据 Human 的项目需求和后续架构共识维护。未引入 Starter 的 Git 历史或业务资料。
+
+### T04：项目登记与受限来源查询（候选实现，等待验收）
+
+T04 按 2026-10-29 Human 授权实施；不包含 T05 观察基线、后台检查或变化通知。
+原 T01/T03 启动命令、工具名称、参数与配置方式不变。新增模式使用独立入口，避免改变旧工具列表。
+
+本地操作者使用 `.\.venv\Scripts\python.exe registry_admin.py --help`。
+依次用 `project NAME` 创建稳定项目 ID；`source local PATH --project-id ID` 登记本地来源；
+`source github OWNER/REPO --access public --project-id ID` 登记公开来源。
+不传 `--project-id` 可独立登记来源。使用 `link SOURCE_ID PROJECT_ID` 显式关联，
+`unlink SOURCE_ID` 解除关联；不删除项目代码或凭证。
+`update SOURCE_ID LOCATION --access public|private [--credential-ref REF]` 修改来源，
+`rename PROJECT_ID NAME` 修改项目名；`list` 查看登记。
+
+数据库固定为 `%LOCALAPPDATA%\personal-ai-assistant\registry.sqlite3`；MCP 不接受数据库位置、路径、仓库或凭证参数。
+SQLite 仅保存项目、来源、关联、访问模式、凭证引用与创建时间和 schema 版本。
+不保存查询快照、观察 SHA、原始响应、代码或补丁。备份和保护数据库属于当前 Windows 用户的责任；
+同一用户的恶意进程不在应用隔离保证内。
+
+私有来源先通过 `credential-set REF` 的隐藏输入配置 Fine-grained PAT，再登记
+`source github OWNER/REPO --access private --credential-ref REF`。
+PAT 仅选定测试仓库，最低 `Metadata: read` 与 `Contents: read`；不申请写权限或其他功能权限。
+令牌只存 Windows Credential Manager 的 `personal-ai-assistant/github/REF` 通用凭证，
+直接调用 Win32 CredRead/CredWrite/CredDelete；不可用时失败关闭，隐藏输入不可用时拒绝明文回退。
+`credential-set REF` 更新，`credential-delete REF` 删除；每次请求重新取凭证，无令牌缓存，
+删除后关联来源下一次访问返回缺少凭证。不要在聊天、命令参数或配置中输入 PAT。
+
+启动新增 MCP：`.\.venv\Scripts\python.exe registry_mcp.py`。
+工具仅有 `list_registered_projects()`、`get_registered_source_status(source_id)`、
+`compare_registered_github_commits(source_id, base_sha, head_sha)`，比较要求完整 40 位 SHA。
+登记管理和凭证操作均不暴露给模型。注册 Codex 时使用独立名称及绝对路径；
+验证记录须区分 SDK stdio 验证与真实 AI 客户端调用。
+
+GitHub 固定 `api.github.com` HTTPS GET，TLS 验证、不跟随重定向、不使用代理环境、无重试；
+公开来源不发送令牌；私有来源失败不会匿名重试。默认分支从元数据读取。
+响应上限 2 MiB，每次 socket 操作超时 10 秒；不是整个查询的总时限。
+比较首个分页最多输出 100 个提交和 300 个文件，达到文件上限或提交被截断会标记不完整。
+[GitHub 比较接口限制](https://docs.github.com/en/rest/commits/commits#compare-two-commits)。
+仅允许输出提交标题、路径、类型和统计；原始响应只短暂在进程中解析，patch 不持久化、记录或输出。
+处理结束尽快释放引用，不声称可靠物理擦除运行时内存。外部文字是数据，不是授权或指令。
+
+验证：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v`。
+私有真实集成、Codex/DSH 真实调用和独立审核以 PR 对应 HEAD 的实际证据为准；
+缺少必需验证时阻塞验收，不把模拟测试等同于私有集成成功。
+
+`unlink` 仅解除项目关联，来源仍可查询；`remove-source SOURCE_ID` 撤销来源登记与 MCP 访问，独立保留代码和凭证。
+凭证引用格式为 1–64 个 ASCII 字母、数字、下划线或连字符，例如 `t04-private-test`。
+真实 PAT 只能在本机交互终端执行 `registry_admin.py credential-set t04-private-test` 后通过隐藏提示输入。
