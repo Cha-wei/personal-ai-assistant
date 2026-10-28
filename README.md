@@ -59,6 +59,22 @@ codex mcp get t01_project_status
 
 后续实际运行命令、环境要求及验证入口在此维护。尚未配置分支保护；没有选择开源许可证，公开可见不代表已授予开源许可。
 
+### T03：GitHub 正式基线查询
+
+stdio 启动参数增加 `--github-repository Cha-wei/personal-ai-assistant` 后启用无参数 `get_project_baseline_status`。不配置时保留 T01 工具列表与行为。操作者固定配置项目与仓库关联，模型不能输入路径或 URL；不从 origin 推断关联。
+
+新工具复用本地查询，`local` 保留工作区状态，`remote` 包含 main SHA、GitHub 来源与 UTC 请求时间。`relation` 为 SAME/AHEAD/BEHIND/DIVERGED/UNKNOWN；计数仅描述已提交历史。只有本地完整提交图、远端 commit 对象可用且没有 shallow/replace/grafts 时计算关系，否则 UNKNOWN 并附原因。不会自动 fetch 或写入 Git。
+
+仅匿名 HTTPS GET `api.github.com:443/repos/{配置仓库}/git/ref/heads/main`，验证 TLS，不跟随重定向，不读取令牌、代理环境或 Git credential helper。每次 socket 操作超时 10 秒，响应上限 64 KiB，不重试或缓存。HTTP 403/404/429、网络失败及无效响应不能表示“无变化”；404 不区分不存在与无权访问。不是原子快照，目录扫描和恶意并发限制沿用 T01。
+
+保留现有注册，使用独立名称：
+
+```powershell
+codex mcp add t03_project_baseline -- E:\AI-assistant\.venv\Scripts\python.exe E:\AI-assistant\mcp_server.py --project E:\AI-assistant --github-repository Cha-wei/personal-ai-assistant
+```
+
+在新聊天中调用该服务器的两个工具核对兼容性；DeepSeek Harness 可复用同一 stdio 命令，但实际兼容性须另有证据。移除本次注册：`codex mcp remove t03_project_baseline`。
+
 ## 规范来源
 
 通用治理文件和任务、审核、PR 模板来自 personal-ai-dev-starter；项目说明与范围文档根据 Human 的项目需求和后续架构共识维护。未引入 Starter 的 Git 历史或业务资料。
