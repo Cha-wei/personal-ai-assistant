@@ -67,7 +67,9 @@ Project Brain 可以建议、规划、审视和准备任务，但不能把讨论
 
 Project Brain 的常规交付审视不自动替代 Independent Review。若由 Project Brain 承担独立审核，仍须满足本文件第 7 节规定的独立性、实际变更检查及版本覆盖要求；不满足时，仍须由符合条件的 Independent Reviewer 完成审核。
 
-Coordinator 只解决具体任务中的拆分与协调问题，不能替代 Project Brain 的持续项目理解；反过来，简单任务也不需要为体现项目大脑模式而另设 Coordinator。一个 Active Write Scope（文件、目录、模块或明确范围）同一时刻只有一个 Write Owner。写入包括生成、格式化、删除和覆盖。同一文件不同章节默认仍重叠。
+Coordinator 只解决具体任务中的拆分与协调问题，不能替代 Project Brain 的持续项目理解；反过来，简单任务也不需要为体现项目大脑模式而另设 Coordinator。
+
+一个 Active Write Scope（文件、目录、模块或明确范围）同一时刻只有一个 Write Owner。写入包括生成、格式化、删除和覆盖。同一文件不同章节默认仍重叠。
 
 并行写入仅在目标可独立描述、验收可独立验证、输入版本明确、依赖/接口稳定、范围不重叠时启用。独立执行上下文使用独立任务分支和隔离 workspace/worktree；同一 writable working tree 不同时交给多个 writer。数据库、服务、缓存、生成目录等共享可变资源须隔离或串行；不同分支不代表环境隔离。明确整合负责人，整合后验证组合结果；条件不满足则串行。
 
