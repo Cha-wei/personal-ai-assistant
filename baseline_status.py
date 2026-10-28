@@ -36,7 +36,7 @@ class BaselineStatus:
             result.update(ok=True, sha=sha)
         except (OSError, http.client.HTTPException):
             result["error"] = "NETWORK_UNAVAILABLE"
-        except (ValueError, KeyError, TypeError):
+        except (ValueError, KeyError, TypeError, AttributeError):
             result["error"] = "INVALID_RESPONSE"
         finally:
             connection.close()

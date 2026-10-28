@@ -52,3 +52,12 @@ class BaselineTests(unittest.TestCase):
         for value in ('https://evil/x', 'a/b/c', 'a/..', 'a/b?x', 'a/b\r\nx'):
             with self.assertRaises(ValueError):
                 BaselineStatus(ProjectStatus(str(self.root)), value)
+
+    def test_incomplete_or_rewritten_graph_is_unknown(self):
+        sha = self.git('rev-parse', 'HEAD')
+        obj = self.baseline(sha)
+        (self.root / '.git' / 'shallow').write_text(sha + '\n')
+        self.assertEqual(obj.query()['evidence'], 'shallow_history')
+        (self.root / '.git' / 'shallow').unlink()
+        self.git('replace', sha, sha)
+        self.assertEqual(obj.query()['evidence'], 'rewritten_history')
