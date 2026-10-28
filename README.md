@@ -59,8 +59,6 @@ codex mcp get t01_project_status
 
 后续实际运行命令、环境要求及验证入口在此维护。尚未配置分支保护；没有选择开源许可证，公开可见不代表已授予开源许可。
 
-## 规范来源
-
 ### T03：GitHub 正式基线查询
 
 stdio 启动参数增加 `--github-repository Cha-wei/personal-ai-assistant` 后启用无参数 `get_project_baseline_status`。不配置时保留 T01 工具列表与行为。操作者固定配置项目与仓库关联，模型不能输入路径或 URL；不从 origin 推断关联。
@@ -76,5 +74,7 @@ codex mcp add t03_project_baseline -- E:\AI-assistant\.venv\Scripts\python.exe E
 ```
 
 在新聊天中调用该服务器的两个工具核对兼容性；DeepSeek Harness 可复用同一 stdio 命令，但实际兼容性须另有证据。移除本次注册：`codex mcp remove t03_project_baseline`。
+
+## 规范来源
 
 通用治理文件和任务、审核、PR 模板来自 personal-ai-dev-starter；项目说明与范围文档根据 Human 的项目需求和后续架构共识维护。未引入 Starter 的 Git 历史或业务资料。
