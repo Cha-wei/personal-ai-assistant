@@ -59,5 +59,7 @@ class BaselineTests(unittest.TestCase):
         (self.root / '.git' / 'shallow').write_text(sha + '\n')
         self.assertEqual(obj.query()['evidence'], 'shallow_history')
         (self.root / '.git' / 'shallow').unlink()
-        self.git('replace', sha, sha)
+        self.git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '--allow-empty', '-m', 'replacement')
+        other = self.git('rev-parse', 'HEAD')
+        self.git('replace', sha, other)
         self.assertEqual(obj.query()['evidence'], 'rewritten_history')
