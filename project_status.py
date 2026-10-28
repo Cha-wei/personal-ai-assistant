@@ -62,6 +62,25 @@ class ProjectStatus:
             if not setting or section not in allowed or setting[1].lower() not in allowed[section]:
                 raise QueryError("UNSUPPORTED_GIT_CONFIGURATION")
 
+    def _git_environment(self):
+        env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+        env.update(GIT_OPTIONAL_LOCKS="0", GIT_TERMINAL_PROMPT="0", GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull, GIT_ATTR_NOSYSTEM="1", GIT_NO_LAZY_FETCH="1")
+        return env
+
+    def _run(self, *args):
+        git = shutil.which("git")
+        if not git:
+            raise QueryError("GIT_UNAVAILABLE")
+        completed = subprocess.run(
+            [git, "--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=" + os.devnull,
+             "-c", "core.excludesFile=" + os.devnull, "-c", "core.attributesFile=" + os.devnull,
+             "-C", str(self.authorized), *args],
+            env=self._git_environment(), capture_output=True, timeout=15, shell=False,
+        )
+        if completed.returncode:
+            raise QueryError("GIT_QUERY_FAILED")
+        return completed.stdout
+
     def query(self) -> dict:
         result = {
             "project_path": str(self.authorized),
@@ -85,19 +104,7 @@ class ProjectStatus:
             git = shutil.which("git")
             if not git:
                 raise QueryError("GIT_UNAVAILABLE")
-            env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
-            env.update(GIT_OPTIONAL_LOCKS="0", GIT_TERMINAL_PROMPT="0", GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull, GIT_ATTR_NOSYSTEM="1", GIT_NO_LAZY_FETCH="1")
-
-            def run(*args):
-                completed = subprocess.run(
-                    [git, "--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=" + os.devnull,
-                     "-c", "core.excludesFile=" + os.devnull, "-c", "core.attributesFile=" + os.devnull,
-                     "-C", str(self.authorized), *args],
-                    env=env, capture_output=True, timeout=15, shell=False,
-                )
-                if completed.returncode:
-                    raise QueryError("GIT_QUERY_FAILED")
-                return completed.stdout
+            run = self._run
 
             root = Path(os.fsdecode(run("rev-parse", "--show-toplevel").strip())).resolve()
             if root != self.authorized:
