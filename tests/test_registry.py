@@ -62,7 +62,7 @@ class GitHubTests(unittest.TestCase):
             factory.assert_called_once_with('api.github.com',timeout=10)
             self.assertEqual(conn.calls[0][0][0], 'GET')
             self.assertNotIn('Authorization',conn.calls[0][1]['headers'])
-        for status,code in [(301,'PERMISSION_OR_POLICY_DENIED'),(401,'CREDENTIAL_REJECTED'),(404,'REPOSITORY_UNAVAILABLE_OR_NOT_AUTHORIZED'),(403,'PERMISSION_OR_POLICY_DENIED'),(429,'RATE_LIMITED')]:
+        for status,code in [(301,'UNEXPECTED_HTTP_STATUS'),(401,'CREDENTIAL_REJECTED'),(404,'REPOSITORY_UNAVAILABLE_OR_NOT_AUTHORIZED'),(403,'PERMISSION_OR_POLICY_DENIED'),(429,'RATE_LIMITED')]:
             with patch('registered_queries.http.client.HTTPSConnection',return_value=Connection(Response(status=status))):
                 with self.assertRaisesRegex(GitHubError,code): GitHub(SOURCE).request('')
 
@@ -191,3 +191,38 @@ class SecurityBoundaryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'r.db'; db=Registry(path,writable=True); identifier=db.source('github','owner/repo',access='public')
             asyncio.run(check(db,identifier)); db.close(); self.assertNotIn(MARKER.encode(),path.read_bytes())
+
+class DiagnosticTests(unittest.TestCase):
+    def test_http_classification_and_stages(self):
+        metadata=dict(full_name='owner/repo',private=False,default_branch='main')
+        with tempfile.TemporaryDirectory() as folder:
+            db=Registry(Path(folder)/'r.db',writable=True)
+            identifier=db.source('github','owner/repo',access='public')
+            for status, code in [(401,'CREDENTIAL_REJECTED'),(403,'PERMISSION_OR_POLICY_DENIED'),(404,'REPOSITORY_UNAVAILABLE_OR_NOT_AUTHORIZED'),(500,'GITHUB_UNAVAILABLE'),(503,'GITHUB_UNAVAILABLE')]:
+                for branch in (False,True):
+                    responses=([Connection(Response(metadata))] if branch else [])+[Connection(Response({'secret':MARKER},status=status))]
+                    with patch('registered_queries.http.client.HTTPSConnection',side_effect=responses):
+                        result=RegisteredQueries(db).query(identifier)
+                    self.assertEqual(result['error'],code)
+                    self.assertEqual(result['stage'],'default_branch' if branch else 'repository_metadata')
+                    self.assertNotIn(MARKER,json.dumps(result))
+            with patch('registered_queries.http.client.HTTPSConnection',side_effect=OSError(MARKER)):
+                result=RegisteredQueries(db).query(identifier,SHA,SHA)
+            self.assertEqual(result['error'],'NETWORK_UNAVAILABLE')
+            self.assertEqual(result['stage'],'commit_compare')
+            self.assertNotIn(MARKER,json.dumps(result)); db.close()
+
+    def test_invalid_credential_rejected_without_request_or_normalization(self):
+        class Store:
+            def get(self,ref): return ' secret '
+        with patch('registered_queries.http.client.HTTPSConnection') as factory:
+            with self.assertRaisesRegex(CredentialError,'CREDENTIAL_FORMAT_INVALID'):
+                GitHub(dict(SOURCE,access='private',credential_ref='test'),Store()).request('')
+            factory.assert_not_called()
+        self.assertNotEqual('CREDENTIAL_FORMAT_INVALID','CREDENTIAL_REJECTED')
+
+    def test_identical_compare(self):
+        data=dict(status='identical',base_commit={'sha':SHA},total_commits=0,commits=[],files=[])
+        with patch.object(GitHub,'request',return_value=data):
+            result=GitHub(SOURCE).compare(SHA,SHA)
+        self.assertTrue(result['complete']); self.assertEqual(result['files'],[])

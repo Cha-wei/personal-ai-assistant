@@ -39,16 +39,19 @@ class WindowsCredentials:
         if not self.api.CredReadW(self.target(reference), 1, 0, ctypes.byref(ptr)):
             raise CredentialError('CREDENTIAL_NOT_CONFIGURED' if ctypes.get_last_error() == 1168 else 'CREDENTIAL_STORE_UNAVAILABLE')
         try:
-            value = ctypes.string_at(ptr.contents.CredentialBlob, ptr.contents.CredentialBlobSize).decode('utf-8')
-            if not value or not value.isascii() or any(ord(c) < 33 or ord(c) > 126 for c in value):
-                raise CredentialError('CREDENTIAL_REJECTED')
+            try:
+                value = ctypes.string_at(ptr.contents.CredentialBlob, ptr.contents.CredentialBlobSize).decode('utf-8')
+            except UnicodeDecodeError:
+                raise CredentialError('CREDENTIAL_FORMAT_INVALID') from None
+            if len(value) > 2500 or not value or not value.isascii() or any(ord(c) < 33 or ord(c) > 126 for c in value):
+                raise CredentialError('CREDENTIAL_FORMAT_INVALID')
             return value
         finally:
             self.api.CredFree(ptr)
 
     def set(self, reference, token):
         if not token or not token.isascii() or any(ord(c) < 33 or ord(c) > 126 for c in token) or len(token) > 2500:
-            raise CredentialError('CREDENTIAL_REJECTED')
+            raise CredentialError('CREDENTIAL_FORMAT_INVALID')
         raw = token.encode('ascii')
         blob = (ctypes.c_ubyte * len(raw)).from_buffer_copy(raw)
         entry = CREDENTIAL(Type=1, TargetName=self.target(reference), CredentialBlobSize=len(raw),
